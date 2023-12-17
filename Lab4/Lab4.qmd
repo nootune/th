@@ -1,0 +1,106 @@
+---
+title: "Lab4"
+format:
+  md:
+    output-file: README.md
+editor: visual
+---
+## Цель Работы
+
+1.  Закрепить практические навыки использования языка программирования R для обработки данных
+2.  Закрепить знания основных функций обработки данных экосистемы tidyverse языка R
+3.  Закрепить навыки исследования метаданных DNS трафика
+
+## Ход работы
+```{r}
+library('dplyr')
+```
+```{r}
+library('tidyverse')
+```
+
+1.Импорт данных из файлов dns.log и header.csv
+```{r}
+dns <- read_tsv("dns.log")
+dns
+```
+```{r}
+header <- read.csv("header.csv")
+header
+```
+2.Добавьте пропущенные данные о структуре данных (назначении столбцов)
+```{r}
+names(dns) <- c("ts", "uid", "id_or_h", "or_p", "id_re_h", "re_p","proto", "trans_id","query","qclass", "qclass_name", "qtype", "qtype_name", "rcode","rcode_name", "AA", "TC","RD","RA","Z","answer","TTLs","rejected")
+```
+3.Преобразуйте данные в столбцах в нужный формат
+
+4.Просмотрите общую структуру данных с помощью функции glimpse()
+```{r}
+glimpse(dns)
+```
+
+5.Сколько участников информационного обмена в сети Доброй Организации?
+юзеров:
+```{r}
+select(dns,uid) %>% group_by(uid) %>% count() %>% nrow()
+
+```
+Пк:
+
+```{r}
+a <- dns %>% filter(id_or_h != 'NA', id_re_h != 'NA', id_or_h != id_re_h) %>% select(id_or_h) %>% unique() 
+b <-  dns %>% filter(id_or_h != 'NA', id_re_h != 'NA', id_re_h != id_or_h) %>% select(id_re_h) %>% unique()
+c <- a <- b
+c %>% count()
+```
+6.Какое соотношение участников обмена внутри сети и участников обращений к внешним ресурсам?
+```{r}
+a <- filter(dns, qtype_name == 'A'| qtype_name == 'AA' | qtype_name =='AAA' | qtype_name == 'AAAA') %>% group_by(uid) %>% count() %>% nrow() 
+b <- filter(dns, qtype_name != 'A', qtype_name !='AA', qtype_name !='AAA', qtype_name !='AAAA') %>% group_by(uid) %>% count() %>% nrow()
+b/a
+
+```
+7.Найдите топ-10 участников сети, проявляющих наибольшую сетевую активность.
+```{r}
+select(dns,uid) %>% group_by(uid) %>% count() %>% arrange(desc(n)) %>% head(10)
+
+```
+8.Найдите топ-10 доменов, к которым обращаются пользователи сети и соответственное количество обращений.
+```{r}
+top_10 <- dns %>% filter(query !='-', qtype_name == 'A'| qtype_name == 'AA' | qtype_name =='AAA' | qtype_name == 'AAAA') %>% select(query) %>% group_by(query) %>% count() %>% arrange(desc(n)) %>% head(10)
+top_10
+```
+9.Опеределите базовые статистические характеристики (функция summary()) интервала времени между последовательным обращениями к топ-10 доменам.
+```{r}
+
+summary(diff((dns %>% filter(tolower(query) %in% top_10$query) %>% arrange(ts))$ts))
+```
+10.Часто вредоносное программное обеспечение использует DNS канал в качестве канала управления, периодически отправляя запросы на подконтрольный злоумышленникам DNS сервер. По периодическим запросам на один и тот же домен можно выявить скрытый DNS канал. Есть ли такие IP адреса в исследуемом датасете?
+
+
+```{r}
+t <- dns %>% group_by(id_or_h, query) %>% summarise(total = n()) %>% filter(total > 1)
+unique(t$id_or_h)%>% head()
+
+```
+11.Определите местоположение (страну, город) и организацию-провайдера для топ-10 доменов. Для этого можно использовать сторонние сервисы, например https://v4.ifconfig.co.
+
+1  teredo.ipv6.microsoft.com - США, Де-Мойн
+
+2  tools.google.com - США, Маунтин-Вью
+
+3  www.apple.com - США, Купертино
+
+4  safebrowsing.clients.google.com - США, Маунтин-Вью
+
+5  imap.gmail.com - США, Истон
+
+6  stats.norton.com - Великобритания, Вашингтон
+
+7  www.google.com - США, Моунтайн-Вью
+
+8  ratings-wrs.symantec.com - США, Редмонд
+
+9 api.twitter.com - США, Сан-Франциско
+
+10 api.facebook.com - США, Менло-Парк
