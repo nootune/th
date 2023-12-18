@@ -6,7 +6,7 @@ format:
 editor: visual
 ---
 
-#Исследование информации о состоянии беспроводных сетей
+Исследование информации о состоянии беспроводных сетей
 
 ## Цель Работы
 
@@ -21,7 +21,9 @@ editor: visual
 library('dplyr')
 library('tidyverse')
 ```
+
 1.Импортируйте данные
+
 ```{r}
 data0 <- read.csv(file = "mir.csv-01.csv")
 
@@ -38,7 +40,7 @@ data2 <-read.csv(file = "mir.csv-01.csv",skip = 169)
 
 2.Привести датасеты в вид "аккуратных данных", преобразовать типы столбцов всоответствии с типом данных
 
-```{r}        
+```{r}
 data2 <- data2 %>% mutate_at(vars(Station.MAC, BSSID, Probed.ESSIDs), trimws) %>% mutate_at(vars(Station.MAC, BSSID, Probed.ESSIDs), na_if, "")
 ```
 
@@ -53,13 +55,14 @@ data1 %>% glimpse()
 data2 %>% glimpse()
 
 ```
+
 ## Анализ
 
 ### Точки доступа
 
 1.Определить небезопасные точки доступа (без шифрования -- OPN)
 
-```{r}         
+```{r}
 data1 %>% filter(Privacy == ' OPN')
 ```
 
@@ -74,32 +77,36 @@ data1 %>% filter(Privacy == ' OPN')
 
 3.Выявить устройства, использующие последнюю версию протокола шифрования WPA3, и названия точек доступа, реализованных на этих устройствах
 
-```{r}          
+```{r}
 data1 %>% filter(Privacy == " WPA3 WPA2")
 ```
 
 4.Отсортировать точки доступа по интервалу времени, в течение которого они находились на связи, по убыванию.
+
 ```{r}
 a <- difftime(data1$Last.time.seen, data1$First.time.seen, units = "secs")
 tdata1 <- data1
 tdata1 <- cbind(tdata1,a)
 tdata1 %>% select(BSSID,ESSID, Last.time.seen,First.time.seen, a) %>% arrange(desc(a))
 ```
+
 5.Обнаружить топ-10 самых быстрых точек доступа.
 
-```{r}         
+```{r}
 data1 %>% select(BSSID,ESSID,Speed) %>% arrange(desc(Speed)) %>% head(10)
 ```
+
 6.Отсортировать точки доступа по частоте отправки запросов (beacons) в единицу времени по их убыванию.
 
-```{r}         
+```{r}
 data1 %>% select(BSSID,ESSID,X..beacons) %>% arrange(desc(X..beacons))
 ```
+
 ### Данные клиентов
 
 1.Определить производителя для каждого обнаруженного устройства
 
-```{r}        
+```{r}
 data2 %>% glimpse()
 ```
 
@@ -114,16 +121,15 @@ data2 %>% glimpse()
 -   E0:D9:E3 Eltex Enterprise Ltd.
 -   E8:28:C1 Eltex Enterprise Ltd.
 
-
 2.Обнаружить устройства, которые НЕ рандомизируют свой MAC адрес
 
-```{r}         
+```{r}
 data2 %>% select(Station.MAC) %>% filter(!Station.MAC %in% grep(":",data2$Station.MAC, value = TRUE))
 ```
 
 3.Кластеризовать запросы от устройств к точкам доступа по их именам.Определить время появления устройства в зоне радиовидимости и времявыхода его из нее.
 
-```{r}         
+```{r}
 data2 %>% filter(!is.na(Probed.ESSIDs)) %>% group_by(Station.MAC, Probed.ESSIDs) %>%  summarise("first" = min(First.time.seen), "last" = max(Last.time.seen), Power)
 ```
 
@@ -132,5 +138,7 @@ data2 %>% filter(!is.na(Probed.ESSIDs)) %>% group_by(Station.MAC, Probed.ESSIDs)
 ```{r}
 data2 %>% filter(!is.na(Probed.ESSIDs),!is.na(Power) ) %>% group_by(Station.MAC) %>%  summarise("first" = min(First.time.seen), "last" = max(Last.time.seen), Power) %>% arrange(desc(Power)) %>% head(1)
 ```
+
 ## Вывод
+
 Получил знания о методах исследования радиоэлектронной обстановки
