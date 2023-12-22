@@ -18,14 +18,10 @@ editor: visual
 library('dplyr')
 ```
 
-```{r}
-library('tidyverse')
-```
-
 1.Импорт данных из файлов dns.log и header.csv
 
 ```{r}
-dns <- read_tsv("dns.log")
+dns <- read.csv("dns.log",sep ='\t')
 dns
 ```
 
@@ -37,7 +33,7 @@ header
 2.Добавьте пропущенные данные о структуре данных (назначении столбцов)
 
 ```{r}
-names(dns) <- c("ts", "uid", "id_or_h", "or_p", "id_re_h", "re_p","proto", "trans_id","query","qclass", "qclass_name", "qtype", "qtype_name", "rcode","rcode_name", "AA", "TC","RD","RA","Z","answer","TTLs","rejected")
+names(dns) <- c("ts", "uid", "idoh", "orp", "ideh", "rep","proto", "trans_id","query","qclass", "qclass_name", "qtype", "qtype_name", "rcode","rcode_name", "AA", "TC","RD","RA","Z","answer","TTLs","rejected")
 ```
 
 3.Преобразуйте данные в столбцах в нужный формат
@@ -58,8 +54,8 @@ select(dns,uid) %>% group_by(uid) %>% count() %>% nrow()
 Пк:
 
 ```{r}
-a <- dns %>% filter(id_or_h != 'NA', id_re_h != 'NA', id_or_h != id_re_h) %>% select(id_or_h) %>% unique() 
-b <-  dns %>% filter(id_or_h != 'NA', id_re_h != 'NA', id_re_h != id_or_h) %>% select(id_re_h) %>% unique()
+a <- dns %>% filter(idoh != 'NA', ideh != 'NA', idoh != ideh) %>% select(idoh) %>% unique() 
+b <-  dns %>% filter(idoh != 'NA', ideh != 'NA', ideh != idoh) %>% select(ideh) %>% unique()
 c <- a <- b
 c %>% count()
 ```
@@ -97,8 +93,11 @@ summary(diff((dns %>% filter(tolower(query) %in% top_10$query) %>% arrange(ts))$
 10.Часто вредоносное программное обеспечение использует DNS канал в качестве канала управления, периодически отправляя запросы на подконтрольный злоумышленникам DNS сервер. По периодическим запросам на один и тот же домен можно выявить скрытый DNS канал. Есть ли такие IP адреса в исследуемом датасете?
 
 ```{r}
-t <- dns %>% group_by(id_or_h, query) %>% summarise(total = n()) %>% filter(total > 1)
-unique(t$id_or_h)%>% head()
+idc <- dns %>%
+  group_by(ip = tolower(idoh), domain = tolower(query)) %>%
+  summarise(total = n()) %>%
+  filter(total > 1)
+unique(idc$ip)%>% head()
 
 ```
 
