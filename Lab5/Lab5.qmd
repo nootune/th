@@ -19,7 +19,6 @@ editor: visual
 
 ```{r}
 library('dplyr')
-library('tidyverse')
 ```
 
 1.Импортируйте данные
